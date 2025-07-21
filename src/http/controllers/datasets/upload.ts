@@ -4,7 +4,7 @@ import { PrismaDatasetsRepository } from "../../../repositories/prisma/prisma-da
 import { DatasetCreationFailure } from "../../../services/erros/dataset_creation_failure";
 import z, { ZodError } from "zod";
 
-export async function upload(req: Request, res: Response) {
+export async function upload(req: Request, res: Response, next: NextFunction) {
   const { file, user } = req
   const userId = user.id
 
@@ -15,9 +15,7 @@ export async function upload(req: Request, res: Response) {
   const prismaDatasetsRepository = new PrismaDatasetsRepository();
   const datasetUseCase = new DatasetUseCase(prismaDatasetsRepository);
 
-  console.log(res.locals.fileMetadata);
   try {
-
     const fileMetadataSchema = z.object({
       originalName: z.string(),
       filename: z.string(),
@@ -36,7 +34,7 @@ export async function upload(req: Request, res: Response) {
       fileType
     } = validatedMetadata
 
-    await datasetUseCase.execute({
+    const dataset = await datasetUseCase.execute({
       name: originalName,
       metadata: {
         filename,
@@ -46,6 +44,9 @@ export async function upload(req: Request, res: Response) {
       },
       userId
     })
+
+    res.locals.dataset = dataset;
+    next();
 
   } catch (err) {
     if (err instanceof ZodError) {
@@ -62,6 +63,4 @@ export async function upload(req: Request, res: Response) {
 
     throw err;
   }
-
-  return res.status(201).send();
 }

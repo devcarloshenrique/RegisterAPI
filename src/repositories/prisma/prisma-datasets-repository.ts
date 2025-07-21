@@ -7,6 +7,18 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
     throw new Error("Method not implemented.");
   }
 
+  async updateMetadata(id: string, metadata: any) {
+    const dataset = await prisma.dataset.update({
+      where: { id },
+      data: {
+        metadata: {
+          ...metadata
+        }
+      }
+    })
+    return dataset
+  }
+
   async create(data: Prisma.DatasetCreateInput): Promise<Dataset> {
     const dataset = await prisma.dataset.create({
       data,
