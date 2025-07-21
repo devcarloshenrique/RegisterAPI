@@ -42,16 +42,16 @@ export async function authenticate(req: Request, res: Response) {
     });
 
   } catch (err) {
-    if (err instanceof InvalidCredentialsError) {
-      return res.status(400).send({ message: err.message })
-    }
-
     if (err instanceof ZodError) {
       return res.status(400).json({
         message: 'Validation error',
         issues: err.format(),
         status: 400
       });
+    }
+
+    if (err instanceof InvalidCredentialsError) {
+      return res.status(400).send({ message: err.message })
     }
 
     throw err;
