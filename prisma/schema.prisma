@@ -14,20 +14,41 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  password_hash  String
-  created_at    DateTime  @default(now())  
-  datasets Dataset[]
-
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  password_hash   String
+  created_at      DateTime  @default(now())  
+  datasets        Dataset[]
+  querys          Query[]
 }
 
 model Dataset {
-  id        String    @id @default(uuid())
-  nome      String
+  id            String    @id @default(uuid())
+  name          String
+  metadata      Json?
   created_at    DateTime  @default(now())  
+  records       Record[]
 
-  user   User      @relation(fields: [user_id], references: [id])
-  user_id String
+  user          User      @relation(fields: [user_id], references: [id])
+  user_id       String
+}
+
+model Record {
+  id            String    @id @default(uuid())  
+  data          Json?
+  created_at    DateTime  @default(now())
+
+  dataset       Dataset   @relation(fields: [dataset_id], references: [id])
+  dataset_id    String
+}
+
+model Query {
+  id            String    @id @default(uuid())
+  question      String
+  answer        String
+  created_at    DateTime  @default(now())
+
+  user          User      @relation(fields: [user_id], references: [id])
+  user_id       String
 }
