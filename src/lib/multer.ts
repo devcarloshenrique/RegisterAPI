@@ -1,15 +1,16 @@
 import multer from 'multer';
 import path from 'path';
 import { Request } from 'express';
+import { sanitizeFileName } from '../utils/sanitize-filenama';
 
 export const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req: Request, file, cb) => {
     try {
       const timestamp = Date.now();
-      const sanitizedName = file.originalname.replace(/\s+/g, '_');
-      const ext = path.extname(sanitizedName);
-      const filename = `${timestamp}-${sanitizedName}`;
+      const cleanedName = sanitizeFileName(file.originalname);
+      const ext = path.extname(cleanedName);
+      const filename = `${timestamp}-${cleanedName}`;
       
       req.fileInfo = {
         originalName: file.originalname,
@@ -36,4 +37,4 @@ export const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.F
   cb(null, true);
 };
 
-export const limits = { fileSize: 10 * 1024 * 1024 }; // 10MB
+export const limits = { fileSize: 50 * 1024 * 1024 }; // 50MB

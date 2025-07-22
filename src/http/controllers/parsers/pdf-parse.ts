@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
-import { ProcessPDFUseCase } from '../../services/process-pdf'
-import { PrismaRecordsRepository } from '../../repositories/prisma/prisma-records-repository'
-import { PrismaDatasetsRepository } from '../../repositories/prisma/prisma-datasets-repository'
+import { ProcessPDFUseCase } from '../../../services/process-pdf'
+import { PrismaRecordsRepository } from '../../../repositories/prisma/prisma-records-repository'
+import { PrismaDatasetsRepository } from '../../../repositories/prisma/prisma-datasets-repository'
 import { promises as fs } from 'fs'
 
 export async function parsePDF(req: Request, res: Response) {
@@ -20,7 +20,7 @@ export async function parsePDF(req: Request, res: Response) {
 
     return res.status(201).json({
       success: true,
-      message: 'PDF processado e estruturado em JSON com sucesso.',
+      message: 'PDF successfully processed and structured into JSON',
       recordId: record.id,
       recordData: record.data,
     })
@@ -29,11 +29,11 @@ export async function parsePDF(req: Request, res: Response) {
     return res.status(500).json({
       error: 'Error processing PDF',
       details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    })
   } finally {
     if (res.locals.dataset?.metadata?.path) {
       await fs.unlink(res.locals.dataset.metadata.path)
-        .catch(console.error)
+        .catch(err => console.error('Failed to delete temporary file:', err))
     }
   }
 }

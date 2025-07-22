@@ -15,7 +15,7 @@ export const fileUpload = (req: Request, res: Response, next: NextFunction) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(413).json({ 
             success: false, 
-            message: 'File too large (max 10MB allowed)' 
+            message: 'File too large (max 50MB allowed)' 
           });
         }
         if (err.code === 'LIMIT_UNEXPECTED_FILE') {

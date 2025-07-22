@@ -3,8 +3,9 @@ import { DatasetUseCase } from "../../../services/upload";
 import { PrismaDatasetsRepository } from "../../../repositories/prisma/prisma-datasets-repository";
 import { DatasetCreationFailure } from "../../../services/erros/dataset_creation_failure";
 import z, { ZodError } from "zod";
+import { processFileByType } from "../parsers";
 
-export async function upload(req: Request, res: Response, next: NextFunction) {
+export async function persistFileContent(req: Request, res: Response, next: NextFunction) {
   const { file, user } = req
   const userId = user.id
 
@@ -46,7 +47,9 @@ export async function upload(req: Request, res: Response, next: NextFunction) {
     })
 
     res.locals.dataset = dataset;
-    next();
+
+    const result = await processFileByType(req, res);
+    return res.status(201).json(result);
 
   } catch (err) {
     if (err instanceof ZodError) {
