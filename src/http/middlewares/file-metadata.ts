@@ -22,7 +22,7 @@ export const fileMetadata = (req: Request, res: Response, next: NextFunction) =>
     return res.status(500).json({
       success: false,
       message: 'Error processing file metadata',
-      error: process.env.NODE_ENV === 'development' ? err : undefined
+      error: process.env.NODE_ENV === 'dev' ? err : undefined
     });
   }
 };
