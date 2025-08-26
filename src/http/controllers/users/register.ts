@@ -1,43 +1,31 @@
-import { Request, Response, NextFunction} from "express";
-import { z, ZodError } from "zod";
-import { RegisterUseCase } from "../../../services/register";
-import { PrismaUsersRepository } from "../../../repositories/prisma/prisma-users-repository";
-import { UserAlreadyExistsError } from "../../../services/erros/user-already-exists-error";
+import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 
-export async function register(req: Request, res: Response) {
+import { makeRegisterUseCase } from "../../../services/factories/make-register-use-case";
+
+const registerBodySchema = z.object({
+	name: z.string(),
+	email: z.string().email(),
+	password: z.string().min(6),
+});
+
+export async function register(req: Request, res: Response, next: NextFunction) {
 	try {
-		const registerBodySchema = z.object({
-			name: z.string(),
-			email: z.string().email(),
-			password: z.string().min(6),
-		});
-
 		const { name, email, password } = registerBodySchema.parse(req.body);
 
-		const prismaUsersRepository = new PrismaUsersRepository();
-		const registerUseCase = new RegisterUseCase(prismaUsersRepository); 
-
+		const registerUseCase = makeRegisterUseCase()
 		await registerUseCase.execute({
 			name,
 			email,
 			password,
 		});
 
+		return res.status(201).json({
+			status: 201,
+			message: "User registered successfully",
+		});
+
 	} catch (err) {
-		if (err instanceof UserAlreadyExistsError) {
-			return res.status(409).send({ message: err.message });
-		}
-
-		if (err instanceof ZodError) {
-			return res.status(400).json({
-				message: 'Validation error',
-				issues: err.format(),
-				status: 400
-			})
-		}
-		
-		throw err;
+		throw err
 	}
-
-	return res.status(201).send();
 }

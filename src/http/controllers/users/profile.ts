@@ -1,19 +1,25 @@
 import { Request, Response } from "express";
-import { PrismaUsersRepository } from "../../../repositories/prisma/prisma-users-repository";
-import { GetUserProfileUseCase } from "../../../services/get-user-profile";
+import { makeGetUserProfileUseCase } from "../../../services/factories/make-get-user-profile-use-case";
 
 export async function profile(req: Request, res: Response) {
-  const prismaUsersRepository = new PrismaUsersRepository();
-  const registerUseCase = new GetUserProfileUseCase(prismaUsersRepository);
+  try {
+    const getProfileUseCase = makeGetUserProfileUseCase();
 
-  const { user } = await registerUseCase.execute({
-    userId: req.user.id as string
-  });
+    const { user } = await getProfileUseCase.execute({
+      userId: req.user.id as string
+    });
 
-  return res.status(200).json({
-    user: {
-      ...user,
-      password_hash: undefined,
-    }
-  });
+    return res.status(200).json({
+      status: 200,
+      message: "User profile retrieved successfully",
+      data: {
+        user: {
+          ...user,
+          password_hash: undefined,
+        }
+      }
+    });
+  } catch (err) {
+    throw err
+  }
 }

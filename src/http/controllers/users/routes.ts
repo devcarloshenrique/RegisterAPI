@@ -10,7 +10,6 @@ export async function usersRoutes() {
   routes.post('/auth/register', register)
   routes.post('/auth/login', authenticate)
   
-  
   routes.get('/me', verifyJwt, profile)
 
   return routes
