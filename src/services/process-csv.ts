@@ -1,7 +1,7 @@
 import { Record } from '@prisma/client'
 import { RecordsRepository } from '../repositories/records-repository'
 import { DatasetsRepository } from '../repositories/datasets-repository'
-import { parse } from 'csv-parse'
+import { parse as CSVParser } from 'csv-parse'
 import { promises as fs } from 'fs'
 
 interface ProcessCsvUseCaseRequest {
@@ -34,7 +34,7 @@ export class ProcessCsvUseCase {
     const fileContent = await fs.readFile(filePath, { encoding: 'utf8' })
 
     const records = await new Promise<any[]>((resolve, reject) => {
-      parse(fileContent, {
+      CSVParser(fileContent, {
         columns: true,
         skip_empty_lines: true,
       }, (err, output) => {
