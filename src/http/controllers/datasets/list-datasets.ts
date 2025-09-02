@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ListDatasetsUseCase } from '../../../services/list-datasets';
+import { ListDatasetsUseCase } from '../../../use-cases/list-datasets';
 import { PrismaDatasetsRepository } from '../../../repositories/prisma/prisma-datasets-repository';
 
 export async function listDatasets(req: Request, res: Response) {

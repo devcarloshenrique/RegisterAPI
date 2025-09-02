@@ -3,7 +3,7 @@ import { z } from "zod";
 import { sign } from "jsonwebtoken";
 
 import { env } from "../../../env";
-import { makeAuthenticateUseCase } from "../../../services/factories/make-authenticate-use-case";
+import { makeAuthenticateUseCase } from "../../../use-cases/factories/make-authenticate-use-case";
 
 const authenticateBodySchema = z.object({
   email: z.string().email(),

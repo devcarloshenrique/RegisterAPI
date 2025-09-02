@@ -3,7 +3,7 @@ import { verify } from "jsonwebtoken";
 import z from "zod";
 
 import { env } from "../../env";
-import { InvalidTokenError } from "../../services/erros/invalid-token-error";
+import { InvalidTokenError } from "../../use-cases/erros/invalid-token-error";
 
 interface PayloadJWT {
   sub: string;

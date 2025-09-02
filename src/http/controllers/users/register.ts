@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 
-import { makeRegisterUseCase } from "../../../services/factories/make-register-use-case";
+import { makeRegisterUseCase } from "../../../use-cases/factories/make-register-use-case";
 
 const registerBodySchema = z.object({
 	name: z.string(),

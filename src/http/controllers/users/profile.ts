@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { makeGetUserProfileUseCase } from "../../../services/factories/make-get-user-profile-use-case";
+import { makeGetUserProfileUseCase } from "../../../use-cases/factories/make-get-user-profile-use-case";
 
 export async function profile(req: Request, res: Response) {
   try {
