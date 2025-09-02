@@ -3,8 +3,17 @@ import { Prisma, Dataset } from "@prisma/client";
 import { DatasetsRepository } from "../datasets-repository";
 
 export class PrismaDatasetsRepository implements DatasetsRepository {
-  findById(id: string): Promise<Dataset | null> {
-    throw new Error("Method not implemented.");
+  async findById(id: string) {
+    return prisma.dataset.findUnique({
+      where: { id },
+    });
+  }
+
+  async findByIdWithRecords(id: string) {
+    return prisma.dataset.findUnique({
+      where: { id },
+      include: { records: true }
+    });
   }
 
   async listByUserId(userId: string) {
