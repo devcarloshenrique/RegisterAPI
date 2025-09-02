@@ -1,8 +1,7 @@
 import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
-import { swaggerPaths } from './swagger-config';
+import { swaggerPaths } from '../paths';
 
-const options: swaggerJSDoc.Options = {
+export const swaggerConfig: swaggerJSDoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
@@ -29,8 +28,3 @@ const options: swaggerJSDoc.Options = {
   },
   apis: ['src/http/controllers/**/*.ts'],
 };
-
-const swaggerSpec = swaggerJSDoc(options);
-
-export { swaggerSpec, swaggerUi };
-
