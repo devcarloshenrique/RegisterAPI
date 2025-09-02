@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import { env } from "../../env";
 import { ZodError } from "zod";
+import { MulterError } from "multer";
 
-import { UserAlreadyExistsError } from "../../services/erros/user-already-exists-error";
-import { InvalidCredentialsError } from "../../services/erros/invalid-credentials-error";
-import { ResourceNotFoundError } from "../../services/erros/resource-not-found-error";
-import { InvalidTokenError } from "../../services/erros/invalid-token-error";
+import { UserAlreadyExistsError } from "../../use-cases/erros/user-already-exists-error";
+import { InvalidCredentialsError } from "../../use-cases/erros/invalid-credentials-error";
+import { ResourceNotFoundError } from "../../use-cases/erros/resource-not-found-error";
+import { InvalidTokenError } from "../../use-cases/erros/invalid-token-error";
+import { MulterErrorFactory } from "../../use-cases/erros/make-multer-file-upload-error";
+import { MulterFileUploadError } from "../../use-cases/erros/multer-file-upload-error";
 
 interface Error {
   name: string;
@@ -33,15 +36,22 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
     });
   }
 
+  if (err instanceof MulterError || err instanceof MulterFileUploadError) {
+    const multerError = MulterErrorFactory.create(err);
+    return res.status(400).json({
+      status: 400,
+      message: multerError.message,
+    })
+  }
+
   for (const [errorClass, statusCode] of errorMap) { 
     if (err instanceof errorClass) {       
       return res.status(statusCode).json({
         status: statusCode,
         message: err.message,
       });
-
     }
-  }
+  }  
   
   return res.status(500).json({
     status: 500,
