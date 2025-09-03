@@ -1,9 +1,30 @@
-services: 
-  api-checkin:
+services:
+  register-api:
     image: bitnami/postgresql
-    ports: 
+    container_name: registerapi_postgresql
+    restart: always
+    ports:
       - 5432:5432
     environment:
       - POSTGRESQL_USERNAME=docker
       - POSTGRESQL_PASSWORD=docker
       - POSTGRESQL_DATABASE=registerapi
+    volumes:
+      - postgres_data:/bitnami/postgresql
+
+  redis:
+    image: redis:7-alpine
+    container_name: registerapi_redis
+    restart: always
+    command: >
+      sh -c "redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes"
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
