@@ -1,7 +1,7 @@
-import { makeParser } from "../infra/parsers/factories/make-parser";
 import { DatasetsRepository } from "../repositories/datasets-repository";
-import { Dataset, Record } from "@prisma/client";
-import { RecordsRepository } from "../repositories/records-repository";
+import { Dataset } from "@prisma/client";
+
+import { JobQueue, JobNames, BullMQQueueAdapter } from "../infra/queue/bullmq/bullmq-queue-adapter";
 
 interface UploadAndParseDatasetUseCaseRequest {
   userId: string;
@@ -9,29 +9,29 @@ interface UploadAndParseDatasetUseCaseRequest {
 }
 
 interface UploadAndParseDatasetUseCaseResponse {
-  dataset: Dataset & { records: Record[] } | null;
-}
-
-interface UploadAndParseDatasetUseCaseResponse {
-  dataset: Dataset & { records: Record[] } | null;
+  dataset: Dataset;
 }
 
 export class UploadAndParseDatasetUseCase {
+  private queue: JobQueue;
+
   constructor(
     private datasetsRepository: DatasetsRepository,
-    private recordsRepository: RecordsRepository
-  ) { }
+  ) { 
+    this.queue = new BullMQQueueAdapter('datasets'); 
+  }
 
   async execute({
     userId,
     file
-  }: UploadAndParseDatasetUseCaseRequest): Promise<UploadAndParseDatasetUseCaseResponse> {  
+  }: UploadAndParseDatasetUseCaseRequest): Promise<UploadAndParseDatasetUseCaseResponse> {        
+
     const dataset = await this.datasetsRepository.create({
       name: file.originalname,
       metadata: { 
         path: file.path,
         mimetype: file.mimetype,
-        status: 'peding',
+        status: 'PENDING',
         progress: 0
       },
       user: {
@@ -41,19 +41,22 @@ export class UploadAndParseDatasetUseCase {
       }
     })
 
-    const parser = makeParser(file.mimetype);
-    const parsedData = await parser.parse(file.path);
-
-    const records = await this.recordsRepository.create({
-      data: parsedData,
-      dataset_id: dataset.id
-    })
-    
-    const datasetWithRecords = await this.datasetsRepository.findByIdWithRecords(dataset.id);
+    await this.queue.add<{
+      datasetId: string;
+      filePath: string;
+      mimeType: string;
+      uploadedByUserId: string;
+    }>(JobNames.DATASET_PARSE, {
+      datasetId: dataset.id,
+      filePath: file.path,
+      mimeType: file.mimetype,
+      uploadedByUserId: userId
+    }, { 
+      jobId: `dataset:${dataset.id}`, 
+    });
 
     return {
-      dataset: datasetWithRecords
+      dataset
     }
   }
 }
-
