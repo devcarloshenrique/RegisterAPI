@@ -23,7 +23,7 @@ export async function authenticate(req: Request, res: Response) {
     const accessToken = await sign(
       { sub: user.id },
       env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     return res.status(200).json({
