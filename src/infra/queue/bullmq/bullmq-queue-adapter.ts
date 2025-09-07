@@ -32,4 +32,8 @@ export class BullMQQueueAdapter implements JobQueue {
       backoff: { type: 'fixed', delay: env.BULLMQ_BACKOFF_MS },
     });
   }
+
+  getQueue(): Queue {
+    return this.queue;
+  }
 }
