@@ -12,5 +12,5 @@ export function makeBullBoardRouter(path: string, queues: BullMQQueueAdapter[]) 
     serverAdapter,
   });
 
-  return serverAdapter;
+  return serverAdapter.getRouter();
 }
