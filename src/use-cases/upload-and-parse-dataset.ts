@@ -31,8 +31,6 @@ export class UploadAndParseDatasetUseCase {
       metadata: { 
         path: file.path,
         mimetype: file.mimetype,
-        status: 'PENDING',
-        progress: 0
       },
       user: {
         connect: {

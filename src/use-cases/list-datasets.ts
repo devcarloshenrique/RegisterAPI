@@ -15,7 +15,7 @@ export class ListDatasetsUseCase {
   async execute({
     userId
   }: ListDatasetsUseCaseRequest): Promise<ListDatasetsUseCaseResponse> {
-    const datasets = await this.datasetsRepository.listByUserId(userId);
+    const datasets = await this.datasetsRepository.findByUserId(userId);
 
     if (datasets.length === 0) {
       throw new Error('Datasets not found for this user')

@@ -1,85 +1,43 @@
-import PDFParser from 'pdf-parse'
-import { promises as fs } from 'fs'
-import { Parser } from '../parser'
-import path from 'path'
+import { Parser } from '../parser';
+import { getDocument, PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
-type PdfChunk = { chunkId: string; page: number; text: string }
-
-const PAGE_DELIM = '<<<__PAGE_BREAK__>>>'           // separador garantido entre páginas
-const CHUNK_SIZE = 900                               // ajuste conforme necessário
-const CHUNK_OVERLAP = 150                            // overlap para manter contexto entre chunks
-
-function normalizeText(s: string): string {
-  return s.replace(/(\r\n|\n|\r)/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
+interface PdfPageData {
+  pageNumber: number;
+  text: string;
 }
 
-function chunkText(text: string, maxChars = CHUNK_SIZE, overlap = CHUNK_OVERLAP): string[] {
-  const chunks: string[] = []
-  if (!text) return chunks
+export interface DataParser<T> {
+  parse(filePath: string, options?: { startPage?: number; endPage?: number }): AsyncIterableIterator<T>;
+  getTotalUnits(filePath: string): Promise<number>;
+}
 
-  let start = 0
-  const len = text.length
-
-  while (start < len) {
-    let end = Math.min(start + maxChars, len)
-
-    // evite cortar no meio da palavra/sentença: retrocede até um espaço/pontuação razoável
-    if (end < len) {
-      const bestBreak = Math.max(
-        text.lastIndexOf('. ', end),
-        text.lastIndexOf('? ', end),
-        text.lastIndexOf('! ', end),
-        text.lastIndexOf(' ', end)
-      )
-      if (bestBreak > start + Math.floor(maxChars * 0.6)) {
-        end = bestBreak + 1
-      }
-    }
-
-    const piece = text.slice(start, end).trim()
-    if (piece.length) chunks.push(piece)
-
-    if (end === len) break
-    start = Math.max(0, end - overlap)
+export class PdfParser implements Parser<PdfPageData> {
+  async getTotalUnits(filePath: string): Promise<number> {
+    const pdf: PDFDocumentProxy = await getDocument(filePath).promise;
+    const totalPages = pdf.numPages;
+    await pdf.destroy();
+    return totalPages;
   }
 
-  return chunks
-}
+  async *parse(filePath: string, options?: { startPage?: number; endPage?: number }): AsyncIterableIterator<PdfPageData> {
+    const pdf = await getDocument(filePath).promise;
+    const totalPages = pdf.numPages;
 
-export class PdfParser implements Parser {
-  async parse(filePath: string): Promise<PdfChunk[]> {
-    const fileContent = await fs.readFile(filePath)
-    const fileId = path.basename(filePath, path.extname(filePath))
+    const start = options?.startPage ?? 1;
+    const end = Math.min(options?.endPage ?? totalPages, totalPages);
 
-    // Usa pagerender para inserir um delimitador entre páginas
-    const pdfData = await PDFParser(fileContent, {
-      pagerender: (pageData: any) =>
-        pageData.getTextContent().then((tc: any) => {
-          const text = tc.items.map((it: any) => it.str).join(' ')
-          // adiciona o delimitador ao fim de cada página
-          return `${text}\n${PAGE_DELIM}\n`
-        }),
-    })
+    try {
+      for (let pageNumber = start; pageNumber <= end; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const text = content.items.map(item => ('str' in item ? item.str : '')).join(' ');
 
-    // Quebra confiável por página
-    const rawPages = pdfData.text.split(PAGE_DELIM).map(p => normalizeText(p)).filter(Boolean)
+        yield { pageNumber, text };
 
-    // Transforma páginas em chunks menores
-    const result: PdfChunk[] = []
-    rawPages.forEach((pageText, i) => {
-      const pageNumber = i + 1
-      const parts = chunkText(pageText)
-      parts.forEach((part, j) => {
-        result.push({
-          chunkId: `${fileId}_page${pageNumber}_chunk${j + 1}`,
-          page: pageNumber,
-          text: part,
-        })
-      })
-    })
-
-    return result
+        page.cleanup();
+      }
+    } finally {
+      pdf.destroy();
+    }
   }
 }
