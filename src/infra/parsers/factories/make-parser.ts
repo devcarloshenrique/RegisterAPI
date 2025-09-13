@@ -1,11 +1,12 @@
-import { Parser } from "../parser";
+import { IDataParser } from "../parser";
 import { CsvParser } from "../implementations/csv-parser";
 import { PdfParser } from "../implementations/pdf-parser";
 
-export function makeParser(fileType: string) { 
+export function makeParser(fileType: string): IDataParser {
   switch (fileType.toLocaleLowerCase()) {
-    // case 'text/csv':
-    //     return new CsvParser();
+    case 'text/csv':
+    case 'application/csv':
+        return new CsvParser();
     case 'application/pdf':
         return new PdfParser();
     default:

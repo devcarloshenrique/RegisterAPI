@@ -5,13 +5,14 @@ import { JobName, JobNames } from "../infra/queue/bullmq/bullmq-queue-adapter";
 import { makeParser } from "../infra/parsers/factories/make-parser";
 
 const QUEUE_NAME = "datasets";
-const RECORDS_BATCH_SIZE = 50;
 
 async function processor(job: { name: JobName; data: any }) {
   if (job.name !== JobNames.DATASET_PARSE) return;
 
   const { datasetId, filePath, mimeType } = job.data;
   const parser = makeParser(mimeType);
+
+  const recordsBatchSize = parser.batchSize;
 
   const prismaDatasetsRepository = new PrismaDatasetsRepository();
   const prismaRecordsRepository = new PrismaRecordsRepository();
@@ -22,34 +23,31 @@ async function processor(job: { name: JobName; data: any }) {
     const totalUnits = await parser.getTotalUnits(filePath);
     let lastProcessedUnit = await prismaDatasetsRepository.getProgress(datasetId);
 
-    const startPage = lastProcessedUnit + 1;
+    const startUnit = lastProcessedUnit + 1;
 
-    if (startPage > totalUnits) {
+    if (startUnit > totalUnits) {
       console.log(`[Worker][${QUEUE_NAME}] Dataset ${datasetId} was already complete.`);
       return;
     }
-
     // The parser now manages the continuous reading of pages.
-    const pageIterator = parser.parse(filePath, { startPage });
-
+    const unitIterator = parser.parse(filePath, { startUnit });
     let chunkBatch = [];
 
     // The "for await...of" loop consumes the iterator page by page
-    for await (const pageData of pageIterator) {
-      chunkBatch.push(pageData);
+    for await (const unitData of unitIterator) {
+      chunkBatch.push(unitData);
 
       // When the batch reaches the desired size, save it to the database
-      if (chunkBatch.length >= RECORDS_BATCH_SIZE) {
+      if (chunkBatch.length >= recordsBatchSize) {
         await prismaRecordsRepository.createManyChunked(
           datasetId,
           chunkBatch.map((c) => ({
-            page: c.pageNumber,
+            unit: c.unitNumber,
             content: c.text,
           }))
         );
-
         // Update checkpoint and clear the batch
-        lastProcessedUnit = pageData.pageNumber; // Get the number of the last page processed in the batch
+        lastProcessedUnit = unitData.unitNumber; // Get the number of the last page processed in the batch
         await prismaDatasetsRepository.setProgress(datasetId, lastProcessedUnit, { totalUnits });
         chunkBatch = [];
       }
@@ -60,7 +58,7 @@ async function processor(job: { name: JobName; data: any }) {
       await prismaRecordsRepository.createManyChunked(
         datasetId,
         chunkBatch.map((c) => ({
-          page: c.pageNumber,
+          unit: c.unitNumber,
           content: c.text,
         }))
       );

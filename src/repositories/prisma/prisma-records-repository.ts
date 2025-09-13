@@ -3,7 +3,7 @@ import { RecordsRepository } from '../records-repository';
 import { Record } from '@prisma/client'
 
 export class PrismaRecordsRepository implements RecordsRepository {
-  async create(params: { datasetId: string; data: { page: number; content: string }[] }): Promise<{ count: number }> {
+  async create(params: { datasetId: string; data: { unit: number; content: string }[] }): Promise<{ count: number }> {
     const records = params.data.map(item => ({
       ...item,
       dataset_id: params.datasetId,
@@ -23,7 +23,7 @@ export class PrismaRecordsRepository implements RecordsRepository {
     });
   }
 
-  async createManyChunked(datasetId: string, items: { page: number; content: string }[], chunkSize = 1000): Promise<number> {
+  async createManyChunked(datasetId: string, items: { unit: number; content: string }[], chunkSize = 1000): Promise<number> {
     let total = 0;
     for (let i = 0; i < items.length; i += chunkSize) {
       const slice = items.slice(i, i + chunkSize);
