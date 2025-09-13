@@ -62,8 +62,8 @@ async function processor(job: { name: JobName; data: any }) {
           content: c.text,
         }))
       );
-      // Update the final checkpoint with the last processed page
-      lastProcessedUnit = chunkBatch[chunkBatch.length - 1].pageNumber;
+      // Update the final checkpoint with the last processed unit
+      lastProcessedUnit = chunkBatch[chunkBatch.length - 1].unitNumber;
       await prismaDatasetsRepository.setProgress(datasetId, lastProcessedUnit, { totalUnits });
     }
 
