@@ -1,0 +1,10 @@
+.vscode
+dist
+node_modules
+uploads
+.env
+.env.example
+.gitignore
+comands.md
+README.md
+requirements.md

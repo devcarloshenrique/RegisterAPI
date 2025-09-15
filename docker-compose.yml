@@ -1,30 +1,88 @@
 services:
-  register-api:
-    image: bitnami/postgresql
+  app:
+    build: .
+    container_name: registerapi_app
+    ports:
+      - "${PORT}:3333"
+    env_file:
+      - .env
+    working_dir: /usr/src/app
+    command: >
+      sh -c "npx prisma migrate deploy && npx pm2-runtime start dist/server.js -i 2"
+    volumes:
+      - uploads_data:/usr/src/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    env_file:
+      - .env
+    working_dir: /usr/src/app
+    command: [
+      "npx",
+      "pm2-runtime",
+      "start",
+      "dist/workers/dataset-parser.worker.js",
+      "--name", "worker-datasets",
+      "--",
+      "datasets",
+      "dataset.parse"
+    ]
+    volumes:
+      - uploads_data:/usr/src/app/uploads
+    deploy: # <--- Adicione esta chave
+      replicas: 4 # Número de instâncias desejado
+      restart_policy:
+        condition: on-failure # Reiniciar em caso de erro
+      resources: # Opcional: Limites de recursos
+        limits:
+          cpus: '1.0' # Limita 100% de uma CPU
+          memory: 200M # Limita a 180MB de RAM
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: bitnami/postgresql:15
     container_name: registerapi_postgresql
     restart: always
-    ports:
-      - 5432:5432
+    env_file:
+      - .env
     environment:
-      - POSTGRESQL_USERNAME=docker
-      - POSTGRESQL_PASSWORD=docker
-      - POSTGRESQL_DATABASE=registerapi
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/bitnami/postgresql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: registerapi_redis
     restart: always
+    env_file:
+      - .env
     command: >
       sh -c "redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
 
 volumes:
   postgres_data:
   redis_data:
+  uploads_data:
