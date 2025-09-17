@@ -2,6 +2,7 @@
 import { IDataParser, ParseResult } from "../infra/parsers/parser";
 import { DatasetsRepository } from "../repositories/datasets-repository";
 import { RecordsRepository } from "../repositories/records-repository";
+import { DatasetNotFound } from "./erros/dataset-not-found";
 
 interface ProcessDatasetUseCaseRequest {
   datasetId: string;
@@ -55,7 +56,7 @@ export class ProcessDatasetUseCase {
     const dataset = await this.datasetsRepository.findById(datasetId);
 
     if (!dataset) {
-      throw new Error('Dataset not found');
+      throw new DatasetNotFound()
     }
 
     await this.datasetsRepository.markProcessing(datasetId);

@@ -9,6 +9,7 @@ import { ResourceNotFoundError } from "../../use-cases/erros/resource-not-found-
 import { InvalidTokenError } from "../../use-cases/erros/invalid-token-error";
 import { MulterErrorFactory } from "../../use-cases/erros/make-multer-file-upload-error";
 import { MulterFileUploadError } from "../../use-cases/erros/multer-file-upload-error";
+import { DatasetNotFound } from "../../use-cases/erros/dataset-not-found";
 
 interface Error {
   name: string;
@@ -20,7 +21,8 @@ const errorMap = new Map<Function, number>([
   [UserAlreadyExistsError,409],
   [InvalidCredentialsError, 401],
   [ResourceNotFoundError, 404],
-  [InvalidTokenError, 401]
+  [InvalidTokenError, 401],
+  [DatasetNotFound, 404]
 ]);
 
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
