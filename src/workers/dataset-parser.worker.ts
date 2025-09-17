@@ -1,81 +1,24 @@
-import { PrismaDatasetsRepository } from "../repositories/prisma/prisma-datasets-repository";
-import { PrismaRecordsRepository } from "../repositories/prisma/prisma-records-repository";
-import { createWorker } from "../infra/queue/bullmq/bullmq-worker-factory";
 import { JobName, JobNames } from "../infra/queue/bullmq/bullmq-queue-adapter";
-import { makeParser } from "../infra/parsers/factories/make-parser";
+import { makeProcessDatasetUseCase } from "../use-cases/factories/make-process-dataset-use-case";
+import { createWorker } from "../infra/queue/bullmq/bullmq-worker-factory";
 
 const QUEUE_NAME = "datasets";
 
-async function processor(job: { name: JobName; data: any }) {
+export async function processor(job: { name: JobName; data: any }) {
   if (job.name !== JobNames.DATASET_PARSE) return;
 
   const { datasetId, filePath, mimeType } = job.data;
-  const parser = makeParser(mimeType);
-
-  const recordsBatchSize = parser.batchSize;
-
-  const prismaDatasetsRepository = new PrismaDatasetsRepository();
-  const prismaRecordsRepository = new PrismaRecordsRepository();
+  const processDatasetUseCase = makeProcessDatasetUseCase(mimeType);
 
   try {
-    await prismaDatasetsRepository.markProcessing(datasetId);
-
-    const totalUnits = await parser.getTotalUnits(filePath);
-    let lastProcessedUnit = await prismaDatasetsRepository.getProgress(datasetId);
-
-    const startUnit = lastProcessedUnit + 1;
-
-    if (startUnit > totalUnits) {
-      console.log(`[Worker][${QUEUE_NAME}] Dataset ${datasetId} was already complete.`);
-      return;
-    }
-    // The parser now manages the continuous reading of pages.
-    const unitIterator = parser.parse(filePath, { startUnit });
-    let chunkBatch = [];
-
-    // The "for await...of" loop consumes the iterator page by page
-    for await (const unitData of unitIterator) {
-      chunkBatch.push(unitData);
-
-      // When the batch reaches the desired size, save it to the database
-      if (chunkBatch.length >= recordsBatchSize) {
-        await prismaRecordsRepository.createManyChunked(
-          datasetId,
-          chunkBatch.map((c) => ({
-            unit: c.unitNumber,
-            content: c.text,
-          }))
-        );
-        // Update checkpoint and clear the batch
-        lastProcessedUnit = unitData.unitNumber; // Get the number of the last page processed in the batch
-        await prismaDatasetsRepository.setProgress(datasetId, lastProcessedUnit, { totalUnits });
-        chunkBatch = [];
-      }
-    }
-
-    // Save the final batch (if the total number of pages is not a multiple of RECORDS_BATCH_SIZE)
-    if (chunkBatch.length > 0) {
-      await prismaRecordsRepository.createManyChunked(
-        datasetId,
-        chunkBatch.map((c) => ({
-          unit: c.unitNumber,
-          content: c.text,
-        }))
-      );
-      // Update the final checkpoint with the last processed unit
-      lastProcessedUnit = chunkBatch[chunkBatch.length - 1].unitNumber;
-      await prismaDatasetsRepository.setProgress(datasetId, lastProcessedUnit, { totalUnits });
-    }
-
-    // Completed
-    const totalInserted = await prismaRecordsRepository.countByDataset(datasetId);
-    await prismaDatasetsRepository.markCompleted(datasetId, {
-      recordsCount: totalInserted,
-      progressTo: totalUnits,
+    await processDatasetUseCase.execute({
+      datasetId,
+      filePath,
+      mimeType,
     });
+
   } catch (err) {
     console.error(`[Worker][${QUEUE_NAME}] Failed job:`, err);
-    await prismaDatasetsRepository.markFailed(datasetId, err);
     throw err;
   }
 }
