@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import z from "zod";
 
-import { UploadAndParseDatasetUseCase } from "../../../use-cases/upload-and-parse-dataset";
-import { PrismaDatasetsRepository } from "../../../repositories/prisma/prisma-datasets-repository";
 import { sanitizeOriginalFilename } from "../../../utils/sanitize-filenama";
+import { makeUploadAndParseDatasetUseCase } from "../../../use-cases/factories/make-upload-and-parse-dataset";
 
 const uploadAndParseDatasetBodySchema = z.any()
   .refine((file) => file?.size, `The file is required`)
@@ -13,8 +12,7 @@ export async function uploadAndParseDataset(req: Request, res: Response) {
     const file = uploadAndParseDatasetBodySchema.parse(req.file);
     const userId = req.user.id;
 
-    const prismaDatasetsRepository = new PrismaDatasetsRepository();
-    const uploadAndParseDatasetUseCase = new UploadAndParseDatasetUseCase(prismaDatasetsRepository);
+    const uploadAndParseDatasetUseCase = makeUploadAndParseDatasetUseCase()
 
     const dataset = await uploadAndParseDatasetUseCase.execute({
       userId,
