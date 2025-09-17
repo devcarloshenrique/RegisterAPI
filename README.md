@@ -2,189 +2,158 @@
 
 ## 📝 Descrição do Projeto
 
-API robusta desenvolvida em **Node.js com TypeScript** para autenticação e gerenciamento seguro de documentos. Suporta **upload de arquivos PDF/CSV (até 50MB)**, autenticação via **JWT**, e consulta organizada por usuário. Utiliza **PostgreSQL** com **Prisma ORM** e validações garantidas com **Zod**.
+API robusta desenvolvida em **Node.js com TypeScript** para autenticação, gerenciamento seguro de documentos e **processamento assíncrono de arquivos em background**. Suporta **upload de arquivos PDF/CSV (até 50MB)**, autenticação via **JWT** e consulta organizada por usuário.
+
+Para otimizar a performance e a escalabilidade, a API utiliza **Redis com BullMQ** para enfileirar e processar o parsing de documentos, aproveitando **streaming e workers**. O progresso das filas pode ser monitorado através de um dashboard interativo com **Bull Board**.
+
+A aplicação segue os princípios **SOLID** e **Clean Architecture**, garantindo código escalável, desacoplado e de fácil manutenção.
 
 ### 🔧 Funcionalidades Principais
 
-* Autenticação segura com JWT (registro e login)
-* Upload de documentos com metadados
-* Listagem de arquivos por usuário autenticado
-* Validação de dados em todas as requisições com Zod
-
-A aplicação segue os princípios **SOLID** e **Clean Architecture**, garantindo código escalável, desacoplado e de fácil manutenção.
+  * **Autenticação segura**: Registro e login com JWT.
+  * **Upload de documentos**: Suporte para PDF/CSV com metadados.
+  * **Processamento em background**: Filas com **Redis** e **BullMQ** para parsing assíncrono.
+  * **Otimização de performance**: Uso de **streaming e workers** para analisar arquivos grandes sem sobrecarregar a aplicação.
+  * **Monitoramento de filas**: Dashboard com **Bull Board** para visualizar o status dos jobs.
+  * **Documentação da API**: Endpoints documentados e testáveis com **Swagger (OpenAPI)**.
+  * **Validação de dados**: Tipagem e validação em todas as requisições com **Zod**.
+  * **Tratamento de Erros**: Error Handler centralizado para uma gestão consistente de exceções.
 
 ## 🛠️ Stack Tecnológica
 
 ### Core
-- **Runtime**: Node.js
-- **Framework**: Express 5.x
-- **Linguagem**: TypeScript
-- **Build**: TSX + TypeScript
+
+  - **Runtime**: Node.js (v18+)
+  - **Framework**: Express 5.x
+  - **Linguagem**: TypeScript
+  - **Build**: TSX + TypeScript
 
 ### Banco de Dados
-- **ORM**: Prisma 6.12
-- **Database**: PostgreSQL
+
+  - **ORM**: Prisma
+  - **Database**: PostgreSQL
+
+### Filas e Processamento em Background
+
+  - **In-Memory Store**: Redis
+  - **Gerenciador de Filas**: BullMQ
 
 ### Segurança
-- **Autenticação**: JWT + bcryptjs
-- **Validação**: Zod
+
+  - **Autenticação**: JWT + bcryptjs
+  - **Validação**: Zod
 
 ### Processamento de Arquivos
-- **Upload**: Multer
-- **PDF**: pdf-parse
-- **CSV**: csv-parse
+
+  - **Upload**: Multer
+  - **Parsing**: `pdf-parse` e `csv-parse` com suporte a streaming.
+
+### Documentação e Monitoramento
+
+  - **API Docs**: Swagger (via `swagger-ui-express`)
+  - **Monitoramento de Filas**: Bull Board
 
 ### Testes
-- **Framework**: Vitest
-- **Modo**: Watch/CI
 
-### Ferramentas
-- **Variáveis de Ambiente**: dotenv
-- **Database GUI**: Prisma Studio
+  - **Framework**: Vitest
+  - **Modo**: Watch/CI
 
-## 🔑 Endpoints
+## 🔑 Endpoints e Interfaces
 
-### Autenticação
-| Método | Endpoint       | Descrição               |
-|--------|----------------|-------------------------|
-| POST   | /auth/register | Registrar novo usuário  |
-| POST   | /auth/login    | Login e obtenção de token |
+### API
 
-### Documentos
-| Método | Endpoint          | Descrição               |
+| Método | Endpoint          | Descrição               |
 |--------|-------------------|-------------------------|
-| POST   | /datasets/upload  | Upload de PDF/CSV (50MB)|
-| GET    | /datasets         | Listar documentos       |
-| GET    | /me               | Dados do usuário        |
+| POST   | api/auth/register    | Registrar novo usuário  |
+| POST   | api/auth/login       | Login e obtenção de token |
+| GET    | api/me               | Dados do usuário logado   |
+| POST   | api/datasets/upload  | Upload de PDF/CSV (50MB)|
+| GET    | api/datasets         | Listar documentos       |
 
-## ⚡ Como Usar
+### Gerenciamento e Documentação
 
-1. **Registre-se**:
-```bash
-curl -X POST http://localhost:3333/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Usuario","email":"user@email.com","password":"senha123"}'
-```
-
-2. **Faça login** para obter token:
-```bash
-curl -X GET http://localhost:3333/me \
-  -H "Authorization: Bearer <SEU_TOKEN_JWT>"
-```
-
-3. **Obter usuários logado** 
-
-```bash
-curl -X POST http://localhost:3333/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@email.com","password":"senha123"}'
-```
-
-
-4. **Use o token** (substitua <TOKEN>):
-```bash
-# Listar documentos
-curl -X GET http://localhost:3333/datasets \
-  -H "Authorization: Bearer <TOKEN>"
-
-# Upload de arquivo
-curl -X POST http://localhost:3333/datasets/upload \
-  -H "Authorization: Bearer <TOKEN>" \
-  -F "file=@documento.pdf"
-```
+| Interface         | Endpoint                    | Descrição                               |
+|-------------------|--------------------------------|-------------------------------------------|
+| **Swagger UI**    | /docs | Documentação interativa e teste de endpoints |
+| **Bull Board**    | /admin/queues | Dashboard para monitoramento das filas    |
 
 ## 🚀 Inicialização do Projeto
 
-Siga estes passos para configurar e iniciar a aplicação:
+Você pode executar este projeto de duas maneiras: utilizando Docker (recomendado para maior simplicidade) ou configurando o ambiente manualmente.
 
-### Pré-requisitos
-- Docker e Docker Compose instalados
+### Opção 1: Com Docker (Recomendado)
+
+Este é o método mais rápido e fácil para subir toda a aplicação, incluindo o banco de dados e o Redis, sem a necessidade de instalar nada além do Docker.
+
+
+**Pré-requisitos**
+  - Docker e Docker Compose instalados
+
+**Passo a Passo**
+
+1.  **Clone o repositório e configure as variáveis de ambiente:**
+    ```bash
+    git clone https://github.com/devcarloshenrique/RegisterAPI
+    cd RegisterAPI
+    cp .env.example .env 
+    ```
+    *Obs: As configurações no `.env` já estão ajustadas para o ambiente Docker, mas sinta-se à vontade para revisar.*    
+
+2.  **Inicie todos os serviços com Docker Compose:**
+
+    ```bash
+    docker compose up -d
+    ```
+
+### Opção 2: Manualmente (Ambiente Local)
+
+Utilize este método se preferir configurar cada serviço em sua própria máquina.
+
+**Pré-requisitos:**
 - Node.js (versão 18 ou superior)
-- npm ou yarn
+- Instância do PostgreSQL rodando
+- Instância do Redis rodando
 
-### Passo a Passo
+**Passo a Passo**
+1.  **Clone o repositório e instale as dependências:**
+    ```bash
+    git clone https://github.com/devcarloshenrique/RegisterAPI
+    cd RegisterAPI
+    ```
+2.  **Configure as variáveis de ambiente:**
+    ```bash
+    cp .env.example .env
+    ```
+    *Edite o arquivo `.env` com as strings de conexão para seu PostgreSQL e Redis locais.*
 
-1. **Configurar variáveis de ambiente**:
-   ```bash
-   # Renomeie .env.example para .env
-   .env.example .env
-   ```
-   Edite o arquivo `.env` com suas configurações locais
+3.  **Execute as migrações do banco de dados:**
+    ```bash
+    npx prisma migrate dev
+    ```
 
-2. **Iniciar containers Docker**:
-   ```bash
-   docker compose up -d
-   ```
+4.  **Inicie a aplicação:**
+      ```bash
+      npm install
+      npm run dev
+      npm run dev:worker
+    ```
 
-3. **Instalar dependências**:
-   ```bash
-   npm install
-   ```
+## 💻 Acessando os Serviços
 
-4. **Configurar banco de dados**:
-   ```bash
-   npx prisma migrate deploy
-   npx prisma generate
-   ```
+Após a inicialização por qualquer um dos métodos acima, os seguintes serviços estarão disponíveis:
 
-5. **Iniciar a aplicação**:
-   Para desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-   
-   Para produção:
-   ```bash
-   npm run build
-   npm start
-   ```
-
-### Verificações pós-instalação
-
-1. Acesse o Prisma Studio para visualizar os dados:
-   ```bash
-   npx prisma studio
-   ```
-   Disponível em: `http://localhost:5555`
-
-2. A API estará rodando em:
-   - Desenvolvimento: `http://localhost:3333`
-   
-3. Para parar os containers:
-   ```bash
-   docker compose down
-   ```
-
-> **Nota**: Na primeira execução, o banco de dados pode levar alguns minutos para ficar totalmente disponível. Caso ocorram erros nas migrações, aguarde 1-2 minutos e execute novamente `npx prisma migrate deploy`.
+  * **API**: [`http://localhost:3333`](https://www.google.com/search?q=http://localhost:3333)
+  * **Documentação Swagger**: [`http://localhost:3333/docs`](https://www.google.com/search?q=http://localhost:3333/docs)
+  * **Dashboard Bull Board**: [`http://localhost:3333/admin/queues`](https://www.google.com/search?q=http://localhost:3333/admin/queues)
 
 ## 🧪 Suíte de Testes
 
-Testes implementados com Vitest cobrindo:
-- Rotas de autenticação
-- Validações de schema
-- Casos de erro
+Para executar os testes e garantir a integridade do código, utilize os seguintes comandos:
 
-Para executar:
 ```bash
-npm test       # Execução única
-npm run test:watch # Desenvolvimento
+# Execução única dos testes
+npm test
+
+# Executar testes em modo de desenvolvimento (watch)
+npm run test:watch
 ```
-
-## 🏁 Conclusão
-Esta API oferece uma solução completa para gerenciamento seguro de documentos, combinando boas práticas de desenvolvimento com tecnologias modernas.
-
-### 🔮 Próximos Passos
-
-### 📄 Documentação
-- [ ] Swagger UI para documentação interativa
-
-### 🔍 Busca Avançada
-- [ ] `GET /datasets/:id/records` - Listar registros de dataset
-- [ ] `GET /records/search?query=...` - Busca textual em JSON
-
-### 🤖 IA Simulada
-- [ ] `POST /queries` - Endpoint de perguntas/respostas
-- [ ] Armazenar histórico em tabela `queries`
-
-### 📊 Histórico
-- [ ] `GET /queries` - Listar consultas anteriores
