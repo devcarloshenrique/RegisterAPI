@@ -1,9 +1,9 @@
 services:
   app:
     build: .
-    container_name: registerapi_app
+    container_name: registerapi
     ports:
-      - "${PORT}:3333"
+      - "${PORT}:${PORT}"
     env_file:
       - .env
     working_dir: /usr/src/app
@@ -61,7 +61,7 @@ services:
     volumes:
       - postgres_data:/bitnami/postgresql
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
