@@ -1,6 +1,5 @@
-
 import { IDataParser, ParseResult } from "../infra/parsers/parser";
-import { DatasetsRepository } from "../repositories/datasets-repository";
+import { DatasetMetadata, DatasetsRepository } from "../repositories/datasets-repository";
 import { RecordsRepository } from "../repositories/records-repository";
 import { DatasetNotFound } from "./erros/dataset-not-found";
 
@@ -8,6 +7,12 @@ interface ProcessDatasetUseCaseRequest {
   datasetId: string;
   filePath: string;
   mimeType: string;
+}
+
+interface ProcessDatasetUseCaseResponse {
+  status: 'completed' | 'failed' | 'already_completed';
+  message: string;
+  datasetId: string;
 }
 
 export class ProcessDatasetUseCase {
@@ -20,17 +25,20 @@ export class ProcessDatasetUseCase {
   async execute({
     datasetId,
     filePath,
-  }: ProcessDatasetUseCaseRequest): Promise<void> {
+  }: ProcessDatasetUseCaseRequest): Promise<ProcessDatasetUseCaseResponse> {
     try {
-      const { totalUnits } = await this.initializeProcessing(datasetId, filePath);
+      const { totalUnits, lastProcessedUnit } = await this.initializeProcessing(datasetId, filePath);
 
-      let lastProcessedUnit = await this.datasetsRepository.getProgress(datasetId);
-      const startUnit = lastProcessedUnit + 1;
-
+      if (lastProcessedUnit >= totalUnits) {
+        return {
+          status: 'already_completed',
+          message: 'Dataset is already fully processed.',
+          datasetId,
+        };
+      }
+      
       // The parser now manages the continuous reading of pages.
-      const unitIterator = this.parser.parse(filePath, { 
-        startUnit: (await this.datasetsRepository.getProgress(datasetId)) + 1
-      });
+      const unitIterator = this.parser.parse(filePath, { startUnit: lastProcessedUnit + 1 });
       let chunkBatch: ParseResult[] = [];
 
       // The "for await...of" loop consumes the iterator page by page
@@ -46,23 +54,33 @@ export class ProcessDatasetUseCase {
 
       await this.finalizeProcessing(datasetId, chunkBatch, totalUnits);
 
+      return {
+        status: 'completed',
+        message: 'Dataset processed successfully',
+        datasetId,
+      }
+
     } catch (err) {
       await this.datasetsRepository.markFailed(datasetId, err);
       throw err;
     }
   }
 
-  private async initializeProcessing(datasetId: string, filePath: string): Promise<{ totalUnits: number }> {
+  private async initializeProcessing(datasetId: string, filePath: string): Promise<{ totalUnits: number , lastProcessedUnit: number}> {
     const dataset = await this.datasetsRepository.findById(datasetId);
 
     if (!dataset) {
       throw new DatasetNotFound()
     }
 
-    await this.datasetsRepository.markProcessing(datasetId);
-    const totalUnits = await this.parser.getTotalUnits(filePath);
+    const processedUnits = (dataset.metadata as DatasetMetadata).progress || 0;    
+    const totalUnits = (dataset.metadata as DatasetMetadata).totalUnits || await this.parser.getTotalUnits(filePath);
 
-    return { totalUnits };
+    if(processedUnits < totalUnits) {
+      await this.datasetsRepository.markProcessing(datasetId);
+    }
+
+    return { totalUnits, lastProcessedUnit: processedUnits };
   }
 
   private async processChunkBatch(datasetId: string, chunk: ParseResult[], totalUnits: number) {
