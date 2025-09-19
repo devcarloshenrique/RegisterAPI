@@ -1,5 +1,5 @@
 import { Dataset, Prisma, Record } from "@prisma/client";
-import { DatasetMetadata, DatasetsRepository } from "../datasets-repository";
+import { DatasetMetadata, DatasetsRepository, FindUserDatasetsParams } from "../datasets-repository";
 import { randomUUID } from "crypto";
 
 export class InMemoryDatasetsRepository implements DatasetsRepository {
@@ -12,8 +12,8 @@ export class InMemoryDatasetsRepository implements DatasetsRepository {
     throw new Error("Method not implemented.");
   }
   
-  async findByUserId(userId: string): Promise<Dataset[]> {
-    return await this.items.filter(item => item.user_id === userId);
+  async findByUserId(data: FindUserDatasetsParams): Promise<Dataset[]> {
+    return await this.items.filter(item => item.user_id === data.userId);
   }
 
   async create(data: Prisma.DatasetCreateInput): Promise<Dataset> {    

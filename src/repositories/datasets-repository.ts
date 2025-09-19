@@ -14,10 +14,19 @@ export interface DatasetMetadata {
   lastError?: { message: string; at: string };
 }
 
+export interface FindUserDatasetsParams {
+  userId: string;
+  pagination?: {
+    page?: number;
+    per_page?: number;
+  };
+  order?: 'asc' | 'desc';
+}
+
 export interface DatasetsRepository {
   findById(datasetId: string): Promise<Dataset | null>;
   findByIdWithRecords(datasetId: string): Promise<(Dataset & { records: Record[] }) | null>;
-  findByUserId(userId: string): Promise<Dataset[]>;
+  findByUserId(params: FindUserDatasetsParams): Promise<Dataset[]>
   create(data: Prisma.DatasetCreateInput): Promise<Dataset>;
 
   getMetadata(datasetId: string): Promise<DatasetMetadata>;

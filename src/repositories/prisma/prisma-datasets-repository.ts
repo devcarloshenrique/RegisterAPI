@@ -1,7 +1,9 @@
 import { prisma } from "../../lib/prisma";
 import { Prisma, Dataset, Record } from "@prisma/client";
 import { deepMerge } from "../../utils/deep-merge";
-import { DatasetsRepository, DatasetMetadata } from "../datasets-repository";
+import { DatasetsRepository, DatasetMetadata, FindUserDatasetsParams } from "../datasets-repository";
+import { PrismaClientValidationError } from "@prisma/client/runtime/library";
+import { InvalidParameterError } from "../../use-cases/erros/invalid-parameter-error";
 
 export class PrismaDatasetsRepository implements DatasetsRepository {
   async findById(datasetId: string): Promise<Dataset | null> {
@@ -17,11 +19,32 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
     });
   }
 
-  async findByUserId(userId: string): Promise<Dataset[]> {
-    return prisma.dataset.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: 'desc' }
-    });
+  async findByUserId(data: FindUserDatasetsParams): Promise<Dataset[]> {
+    const page = data.pagination?.page || 1;
+    const per_page = data.pagination?.per_page || 20;
+
+    const order = data.order || 'desc';
+
+    try {
+      const datasets = await prisma.dataset.findMany({
+        where: {
+          user_id: data.userId,
+        },
+        orderBy: {
+          ['created_at']: order,
+        },
+        take: per_page,
+        skip: (page - 1) * per_page,
+      });
+
+      return datasets;
+    } catch (err) {
+      if(err instanceof PrismaClientValidationError) {
+        
+        throw new InvalidParameterError();
+      }
+      throw err
+    }
   }
 
   async create(data: Prisma.DatasetCreateInput): Promise<Dataset> {
