@@ -11,12 +11,13 @@ export class InMemoryDatasetsRepository implements DatasetsRepository {
   findByIdWithRecords(datasetId: string): Promise<(Dataset & { records: Record[]; }) | null> {
     throw new Error("Method not implemented.");
   }
-  findByUserId(userId: string): Promise<Dataset[]> {
-    throw new Error("Method not implemented.");
+  
+  async findByUserId(userId: string): Promise<Dataset[]> {
+    return await this.items.filter(item => item.user_id === userId);
   }
-  async create(data: Prisma.DatasetCreateInput): Promise<Dataset> {    
 
-    const dataset: Dataset = {
+  async create(data: Prisma.DatasetCreateInput): Promise<Dataset> {    
+    const datasets: Dataset = {
       id: randomUUID(),
       name: data.name,
       metadata: data.metadata as Prisma.JsonObject,
@@ -24,8 +25,8 @@ export class InMemoryDatasetsRepository implements DatasetsRepository {
       created_at: new Date(),
     } 
 
-    this.items.push(dataset);
-    return dataset;
+    this.items.push(datasets);
+    return datasets;
   }
   getMetadata(datasetId: string): Promise<DatasetMetadata> {
     throw new Error("Method not implemented.");

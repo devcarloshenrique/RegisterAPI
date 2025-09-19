@@ -4,7 +4,7 @@ import { verifyJwt } from "../../middlewares/verify-jwt";
 import { fileUpload } from "../../middlewares/file-upload";
 import { uploadAndParseDataset } from "./upload-and-parse-dataset";
 
-import { listDatasets } from "./list-datasets";
+import { fetchDatasets } from "./fetch-datasets";
 
 export async function datasetsRoutes() {
   const routes = Router();
@@ -17,7 +17,7 @@ export async function datasetsRoutes() {
 
   routes.get('/datasets',
     verifyJwt,
-    listDatasets
+    fetchDatasets
   );
 
   return routes;
