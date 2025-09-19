@@ -10,7 +10,8 @@ import { InvalidTokenError } from "../../use-cases/erros/invalid-token-error";
 import { MulterErrorFactory } from "../../use-cases/erros/make-multer-file-upload-error";
 import { MulterFileUploadError } from "../../use-cases/erros/multer-file-upload-error";
 import { DatasetNotFound } from "../../use-cases/erros/dataset-not-found";
-import { PrismaClientInitializationError } from "@prisma/client/runtime/library";
+import { PrismaClientInitializationError, PrismaClientValidationError } from "@prisma/client/runtime/library";
+import { InvalidParameterError } from "../../use-cases/erros/invalid-parameter-error";
 
 interface Error {
   name: string;
@@ -19,11 +20,13 @@ interface Error {
 }
 
 const errorMap = new Map<Function, number>([
-  [UserAlreadyExistsError,409],
+  [UserAlreadyExistsError, 409],
   [InvalidCredentialsError, 401],
   [ResourceNotFoundError, 404],
   [InvalidTokenError, 401],
-  [DatasetNotFound, 404]
+  [DatasetNotFound, 404],
+  [PrismaClientValidationError, 400],
+  [InvalidParameterError, 400]
 ]);
 
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
@@ -54,18 +57,17 @@ export function errorHandler(err: Error, req: Request, res: Response, next: Next
     })
   }
 
-  for (const [errorClass, statusCode] of errorMap) { 
-    if (err instanceof errorClass) {       
+  for (const [errorClass, statusCode] of errorMap) {
+    if (err instanceof errorClass) {
       return res.status(statusCode).json({
         status: statusCode,
         message: err.message,
       });
     }
-  }  
-  
+  }
+
   return res.status(500).json({
     status: 500,
     message: 'Internal server error',
   });
-
 }
