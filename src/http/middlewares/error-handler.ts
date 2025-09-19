@@ -10,6 +10,7 @@ import { InvalidTokenError } from "../../use-cases/erros/invalid-token-error";
 import { MulterErrorFactory } from "../../use-cases/erros/make-multer-file-upload-error";
 import { MulterFileUploadError } from "../../use-cases/erros/multer-file-upload-error";
 import { DatasetNotFound } from "../../use-cases/erros/dataset-not-found";
+import { PrismaClientInitializationError } from "@prisma/client/runtime/library";
 
 interface Error {
   name: string;
@@ -28,6 +29,13 @@ const errorMap = new Map<Function, number>([
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
   if (env.NODE_ENV !== 'production') {
     console.error(err)
+  }
+
+  if (err instanceof PrismaClientInitializationError) {
+    return res.status(503).json({
+      status: 503,
+      message: 'Error connecting to the database',
+    });
   }
 
   if (err instanceof ZodError) {
