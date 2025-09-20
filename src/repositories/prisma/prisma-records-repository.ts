@@ -3,18 +3,8 @@ import { RecordsRepository } from '../records-repository';
 import { Record } from '@prisma/client'
 
 export class PrismaRecordsRepository implements RecordsRepository {
-  async create(params: { datasetId: string; data: { unit: number; content: string }[] }): Promise<{ count: number }> {
-    const records = params.data.map(item => ({
-      ...item,
-      dataset_id: params.datasetId,
-    }));
-
-    const res = await prisma.record.createMany({
-      data: records,
-      skipDuplicates: true,
-    });
-
-    return { count: res.count };
+  create(params: { datasetId: string; data: { unit: number; content: string; }[]; }): Promise<{ count: number; }> {
+    throw new Error('Method not implemented.');
   }
 
   async findById(recordId: string): Promise<Record | null> {
@@ -31,7 +21,8 @@ export class PrismaRecordsRepository implements RecordsRepository {
       const res = await prisma.record.createMany({
         data: slice.map((data) => ({
           dataset_id: datasetId,
-          data,
+          unit: data.unit,
+          data: data.content,
         })),
         skipDuplicates: false,
       });

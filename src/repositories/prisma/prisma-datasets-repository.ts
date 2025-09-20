@@ -4,7 +4,6 @@ import { deepMerge } from "../../utils/deep-merge";
 import { DatasetsRepository, DatasetMetadata, FindUserDatasetsParams, FindDatasetWithRecordsParams } from "../datasets-repository";
 import { PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { InvalidParameterError } from "../../use-cases/erros/invalid-parameter-error";
-import { RecordData } from "../records-repository";
 
 export class PrismaDatasetsRepository implements DatasetsRepository {
   async findById(datasetId: string): Promise<Dataset | null> {
@@ -14,36 +13,54 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
   }
 
   async findByIdWithRecords(data: FindDatasetWithRecordsParams): Promise<(Dataset & { records: Record[] }) | null> {
-    const page = data.pagination?.page || 1;
-    const per_page = data.pagination?.per_page || 20;
-
-    const dataset = await prisma.dataset.findUnique({
-      where: { id: data.datasetId },
-      include: { 
-        records: {
+    const pagination = () => {
+      const page = data.pagination?.page || 1;
+      const per_page = data.pagination?.per_page || 20;
+      console.log(data.pagination)
+      if (data.pagination?.page || data.pagination?.per_page) {
+        return {
           take: per_page,
           skip: (page - 1) * per_page,
         }
-      },
-    });
+      }
+      return undefined;
+    }
 
-    if (!dataset) return null;
+    try {
+      const dataset = await prisma.dataset.findUnique({
+        where: { id: data.datasetId },
+        include: {
+          records: {
+            orderBy: {
+              unit: data.order == 'desc' ? 'desc' : 'asc',
+            },
+            ...pagination()
+          }
+        },
+      });
 
-    dataset.records.sort((a, b) => {
-      const unitA = (a.data as RecordData).unit || 0;
-      const unitB = (b.data as RecordData).unit || 0;
+      return dataset
 
-      return unitA - unitB      
-    });
-  
-    return dataset
+    } catch (err) {
+      if (err instanceof PrismaClientValidationError) {
+        throw new InvalidParameterError();
+      }
+      throw err
+    }
   }
 
   async findByUserId(data: FindUserDatasetsParams): Promise<Dataset[]> {
-    const page = data.pagination?.page || 1;
-    const per_page = data.pagination?.per_page || 20;
-
-    const order = data.order || 'desc';
+    const pagination = () => {
+      const page = data.pagination?.page || 1;
+      const per_page = data.pagination?.per_page || 20;
+      if (data.pagination?.page || data.pagination?.per_page) {
+        return {
+          take: per_page,
+          skip: (page - 1) * per_page,
+        }
+      }
+      return undefined;
+    }
 
     try {
       const datasets = await prisma.dataset.findMany({
@@ -51,16 +68,14 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
           user_id: data.userId,
         },
         orderBy: {
-          ['created_at']: order,
+          ['created_at']: data.order || 'desc',
         },
-        take: per_page,
-        skip: (page - 1) * per_page,
+        ...pagination(),
       });
 
       return datasets;
     } catch (err) {
-      if(err instanceof PrismaClientValidationError) {
-        
+      if (err instanceof PrismaClientValidationError) {
         throw new InvalidParameterError();
       }
       throw err
