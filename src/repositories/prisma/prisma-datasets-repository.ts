@@ -1,9 +1,10 @@
 import { prisma } from "../../lib/prisma";
 import { Prisma, Dataset, Record } from "@prisma/client";
 import { deepMerge } from "../../utils/deep-merge";
-import { DatasetsRepository, DatasetMetadata, FindUserDatasetsParams } from "../datasets-repository";
+import { DatasetsRepository, DatasetMetadata, FindUserDatasetsParams, FindDatasetWithRecordsParams } from "../datasets-repository";
 import { PrismaClientValidationError } from "@prisma/client/runtime/library";
 import { InvalidParameterError } from "../../use-cases/erros/invalid-parameter-error";
+import { RecordData } from "../records-repository";
 
 export class PrismaDatasetsRepository implements DatasetsRepository {
   async findById(datasetId: string): Promise<Dataset | null> {
@@ -12,11 +13,30 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
     });
   }
 
-  async findByIdWithRecords(datasetId: string): Promise<(Dataset & { records: Record[] }) | null> {
-    return prisma.dataset.findUnique({
-      where: { id: datasetId },
-      include: { records: true }
+  async findByIdWithRecords(data: FindDatasetWithRecordsParams): Promise<(Dataset & { records: Record[] }) | null> {
+    const page = data.pagination?.page || 1;
+    const per_page = data.pagination?.per_page || 20;
+
+    const dataset = await prisma.dataset.findUnique({
+      where: { id: data.datasetId },
+      include: { 
+        records: {
+          take: per_page,
+          skip: (page - 1) * per_page,
+        }
+      },
     });
+
+    if (!dataset) return null;
+
+    dataset.records.sort((a, b) => {
+      const unitA = (a.data as RecordData).unit || 0;
+      const unitB = (b.data as RecordData).unit || 0;
+
+      return unitA - unitB      
+    });
+  
+    return dataset
   }
 
   async findByUserId(data: FindUserDatasetsParams): Promise<Dataset[]> {

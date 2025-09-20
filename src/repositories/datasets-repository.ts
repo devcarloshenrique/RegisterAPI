@@ -23,10 +23,14 @@ export interface FindUserDatasetsParams {
   order?: 'asc' | 'desc';
 }
 
+export interface FindDatasetWithRecordsParams extends FindUserDatasetsParams {
+  datasetId: string;
+}
+
 export interface DatasetsRepository {
   findById(datasetId: string): Promise<Dataset | null>;
-  findByIdWithRecords(datasetId: string): Promise<(Dataset & { records: Record[] }) | null>;
-  findByUserId(params: FindUserDatasetsParams): Promise<Dataset[]>
+  findByIdWithRecords(data: FindDatasetWithRecordsParams): Promise<(Dataset & { records: Record[] }) | null>;
+  findByUserId(data: FindUserDatasetsParams): Promise<Dataset[]>
   create(data: Prisma.DatasetCreateInput): Promise<Dataset>;
 
   getMetadata(datasetId: string): Promise<DatasetMetadata>;

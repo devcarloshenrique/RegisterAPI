@@ -5,8 +5,8 @@ import { randomUUID } from "crypto";
 export class InMemoryDatasetsRepository implements DatasetsRepository {
   public items: Dataset[] = [];
 
-  findById(datasetId: string): Promise<Dataset | null> {
-    throw new Error("Method not implemented.");
+  async findById(datasetId: string): Promise<Dataset | null> {
+    return this.items.find(item => item.id === datasetId) || null;
   }
   findByIdWithRecords(datasetId: string): Promise<(Dataset & { records: Record[]; }) | null> {
     throw new Error("Method not implemented.");
