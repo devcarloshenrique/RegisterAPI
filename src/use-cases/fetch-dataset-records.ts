@@ -23,12 +23,9 @@ export class FetchDatasetRecordsUseCase {
   }: FetchDatasetRecordsUseCaseRequest): Promise<FetchDatasetRecordsUseCaseResponse> {
     const datasetExists = await this.datasetsRepository.findById(datasetId);
 
-    if (!datasetExists || datasetExists.user_id !== userId) {
-      return {
-        dataset: null
-      }
-    }
-
+    if (!datasetExists || datasetExists.user_id !== userId)
+      return { dataset: null }
+        
     const dataset = await this.datasetsRepository.findByIdWithRecords({
       userId,
       datasetId,
