@@ -1,13 +1,16 @@
 import { expect, describe, it, beforeEach } from 'vitest'
 import { InMemoryDatasetsRepository } from '../repositories/in-memory/in-memory-datasets-repository';
 import { FetchDatasetsUseCase } from './fetch-datasets';
+import { InMemoryRecordsRepository } from '../repositories/in-memory/in-memory-records-repository';
 
 describe("Fetch Datasets Use Case", () => {
+  let recordsRepository: InMemoryRecordsRepository
   let datasetsRepository: InMemoryDatasetsRepository
   let sut: FetchDatasetsUseCase
 
   beforeEach(() => {
-    datasetsRepository = new InMemoryDatasetsRepository()
+    recordsRepository = new InMemoryRecordsRepository();  
+    datasetsRepository = new InMemoryDatasetsRepository(recordsRepository)
     sut = new FetchDatasetsUseCase(datasetsRepository)  
   })
 
