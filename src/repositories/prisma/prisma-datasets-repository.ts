@@ -16,7 +16,6 @@ export class PrismaDatasetsRepository implements DatasetsRepository {
     const pagination = () => {
       const page = data.pagination?.page || 1;
       const per_page = data.pagination?.per_page || 20;
-      console.log(data.pagination)
       if (data.pagination?.page || data.pagination?.per_page) {
         return {
           take: per_page,
