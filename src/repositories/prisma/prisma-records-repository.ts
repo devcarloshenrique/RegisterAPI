@@ -3,14 +3,8 @@ import { RecordsRepository } from '../records-repository';
 import { Record } from '@prisma/client'
 
 export class PrismaRecordsRepository implements RecordsRepository {
-  create(params: { datasetId: string; data: { unit: number; content: string; }[]; }): Promise<{ count: number; }> {
+  create(params: { datasetId: string; data: { unit: number; content: string; }; }): Promise<Record> {
     throw new Error('Method not implemented.');
-  }
-
-  async findById(recordId: string): Promise<Record | null> {
-    return prisma.record.findUnique({
-      where: { id: recordId },
-    });
   }
 
   async createManyChunked(datasetId: string, items: { unit: number; content: string }[], chunkSize = 1000): Promise<number> {
@@ -29,6 +23,16 @@ export class PrismaRecordsRepository implements RecordsRepository {
       total += res.count;
     }
     return total;
+  }
+
+  async findById(recordId: string): Promise<Record | null> {
+    return prisma.record.findUnique({
+      where: { id: recordId },
+    });
+  }
+
+  searchMany(data: { datasetId: string; query: string; }): Promise<Record[]> {
+    throw new Error('Method not implemented.');
   }
 
   async countByDataset(datasetId: string): Promise<number> {
