@@ -21,6 +21,23 @@ export class InMemoryRecordsRepository implements RecordsRepository {
   findById(recordId: string): Promise<Record | null> {
     throw new Error("Method not implemented.");
   }
+
+  async searchMany(data: { datasetId: string; query: string; }): Promise<Record[]> {
+    const lowerCaseQuery = data.query.toLowerCase();
+
+    return this.items.filter(item => {
+      if (item.dataset_id !== data.datasetId) {
+        return false;
+      }
+      
+      const recordData = item.data as { content?: string };
+      if (recordData && typeof recordData.content === 'string') {
+        return recordData.content.toLowerCase().includes(lowerCaseQuery);
+      }
+      return false;
+    });
+  }
+
   countByDataset(datasetId: string): Promise<number> {
     throw new Error("Method not implemented.");
   }
